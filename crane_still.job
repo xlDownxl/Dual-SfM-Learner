@@ -1,0 +1,41 @@
+#!/bin/bash
+#SBATCH --job-name=test3
+#SBATCH --workdir=/wrk/users/nicjosw/upload/scsfm
+#SBATCH -o test3.txt
+#SBATCH -p gpu
+#SBATCH -c 4
+#SBATCH --gres=gpu:1
+#SBATCH --mem=30G
+#SBATCH -t 0-5
+#SBATCH --constraint=v100
+
+module purge                             
+module load Python
+module load cuDNN/7.6.4.38-CUDA-10.0.130
+cd /wrk/users/nicjosw
+source myVirtualEnv/bin/activate
+cd upload/scsfm
+
+mkdir /wrk/users/nicjosw/tmp/$SLURM_JOB_ID/
+mkdir /wrk/users/nicjosw/tmp/$SLURM_JOB_ID/$(date +"%d-%m-%Y-%H-%M-%S")
+export TMPDIR=/wrk/users/nicjosw/tmp/$SLURM_JOB_ID/$(date +"%d-%m-%Y-%H-%M-%S")
+
+srun python train.py /wrk/users/nicjosw/cranev2/v2  \
+--folder-type sequence \
+--resnet-layers 18 \
+--num-scales 1 \
+-b4 -s0.1 -c0.5 --epoch-size 1000 --epochs 5 \
+--with-ssim 1 \
+--log-output \
+--with-mask 1 \
+--with-auto-mask 1 \
+--dataset crane \
+--with-gt \
+--edge-smooth 1 \
+--seed 2 \
+--dont_eval \
+--name $SLURM_JOB_NAME \
+--width 320 --height 180 \
+--pretrained-pose /wrk/users/nicjosw/best_models/dual/stillbox/exp_pose_model_best.pth.tar \
+--pretrained-disp /wrk/users/nicjosw/best_models/dual/stillbox/dispnet_model_best.pth.tar
+
